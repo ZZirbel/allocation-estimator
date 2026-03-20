@@ -6,71 +6,71 @@ const RATE_CARDS_KEY = 'allocation-estimator-rate-cards';
 const ROLE_TEMPLATES_KEY = 'allocation-estimator-role-templates';
 const HYDRATED_KEY = 'allocation-estimator-hydrated';
 
-// ── Server sync (fire-and-forget writes, startup hydration) ─────
+// ── Server sync ─────────────────────────────────────────────────
 
-const API_URL = '/api/data';
-
-interface ServerData {
-  estimates: Estimate[];
-  roleLibrary: RoleLibraryEntry[] | null;
-  rateCards: RateCard[];
-  roleTemplates: RoleTemplate[] | null;
-}
-
-function persistToServer() {
-  const payload: ServerData = {
-    estimates: loadEstimates(),
-    roleLibrary: (() => {
-      const raw = localStorage.getItem(ROLES_KEY);
-      return raw ? JSON.parse(raw) : null;
-    })(),
-    rateCards: loadRateCards(),
-    roleTemplates: (() => {
-      const raw = localStorage.getItem(ROLE_TEMPLATES_KEY);
-      return raw ? JSON.parse(raw) : null;
-    })(),
-  };
-
-  fetch(API_URL, {
+function postJson(url: string, data: unknown) {
+  fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(data),
   }).catch((err) => console.warn('[store] Server persist failed:', err));
 }
 
+function putJson(url: string, data: unknown) {
+  fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).catch((err) => console.warn('[store] Server persist failed:', err));
+}
+
+function deleteRequest(url: string) {
+  fetch(url, { method: 'DELETE' }).catch((err) => console.warn('[store] Server delete failed:', err));
+}
+
 /**
- * On startup, pull data from the server file and populate localStorage.
- * This ensures data survives Electron rebuilds since the server writes
- * to %APPDATA%/allocation-estimator-desktop/data/appdata.json.
- *
- * Only hydrates once per session to avoid overwriting in-memory edits.
+ * On startup, pull data from the server files and populate localStorage.
+ * This ensures data persists across Electron rebuilds and is shared
+ * when pointing to a OneDrive/SharePoint folder.
  */
 export async function hydrateFromServer(): Promise<void> {
-  // Skip if already hydrated this session
   if (sessionStorage.getItem(HYDRATED_KEY)) return;
 
   try {
-    const res = await fetch(API_URL);
-    if (!res.ok) return;
+    const [estRes, rolesRes, cardsRes, tmplRes] = await Promise.all([
+      fetch('/api/estimates'),
+      fetch('/api/role-library'),
+      fetch('/api/rate-cards'),
+      fetch('/api/role-templates'),
+    ]);
 
-    const data: ServerData = await res.json();
-
-    // Only hydrate if the server actually has data
-    if (data.estimates && data.estimates.length > 0) {
-      localStorage.setItem(ESTIMATES_KEY, JSON.stringify(data.estimates));
+    if (estRes.ok) {
+      const estimates = await estRes.json();
+      if (estimates && estimates.length > 0) {
+        localStorage.setItem(ESTIMATES_KEY, JSON.stringify(estimates));
+      }
     }
-    if (data.roleLibrary) {
-      localStorage.setItem(ROLES_KEY, JSON.stringify(data.roleLibrary));
+    if (rolesRes.ok) {
+      const roles = await rolesRes.json();
+      if (roles && roles.length > 0) {
+        localStorage.setItem(ROLES_KEY, JSON.stringify(roles));
+      }
     }
-    if (data.rateCards && data.rateCards.length > 0) {
-      localStorage.setItem(RATE_CARDS_KEY, JSON.stringify(data.rateCards));
+    if (cardsRes.ok) {
+      const cards = await cardsRes.json();
+      if (cards && cards.length > 0) {
+        localStorage.setItem(RATE_CARDS_KEY, JSON.stringify(cards));
+      }
     }
-    if (data.roleTemplates) {
-      localStorage.setItem(ROLE_TEMPLATES_KEY, JSON.stringify(data.roleTemplates));
+    if (tmplRes.ok) {
+      const templates = await tmplRes.json();
+      if (templates && templates.length > 0) {
+        localStorage.setItem(ROLE_TEMPLATES_KEY, JSON.stringify(templates));
+      }
     }
 
     sessionStorage.setItem(HYDRATED_KEY, '1');
-    console.log('[store] Hydrated localStorage from server file');
+    console.log('[store] Hydrated localStorage from server files');
   } catch {
     console.warn('[store] Server hydration unavailable (standalone browser mode)');
   }
@@ -85,7 +85,6 @@ function migrateEstimate(est: Record<string, unknown>): Estimate {
   if (e.showMargin === undefined) e.showMargin = false;
   if (e.status === undefined) (e as Estimate).status = 'draft';
 
-  // Migrate old top-level roles/allocations into a default phase
   if (e.phases.length === 0 && (est.roles || est.startMonth)) {
     e.phases = [{
       id: `migrated-${e.id}`,
@@ -99,14 +98,12 @@ function migrateEstimate(est: Record<string, unknown>): Estimate {
     }];
   }
 
-  // Migrate old phase format
   for (const phase of e.phases) {
     const p = phase as Record<string, unknown>;
     if (!phase.roles) phase.roles = [];
     if (!phase.allocations) phase.allocations = {};
     if (!phase.notes) phase.notes = {};
     if (!phase.expenses) phase.expenses = [];
-    // Migrate roles without location
     for (const role of phase.roles) {
       if (!(role as Record<string, unknown>).location) {
         (role as Record<string, unknown>).location = 'onshore';
@@ -131,7 +128,6 @@ export function loadEstimates(): Estimate[] {
 
 export function saveEstimates(estimates: Estimate[]) {
   localStorage.setItem(ESTIMATES_KEY, JSON.stringify(estimates));
-  persistToServer();
 }
 
 export function loadEstimate(id: string): Estimate | undefined {
@@ -144,10 +140,13 @@ export function saveEstimate(estimate: Estimate) {
   if (idx >= 0) estimates[idx] = estimate;
   else estimates.push(estimate);
   saveEstimates(estimates);
+  // Persist this individual estimate to server
+  putJson(`/api/estimates/${estimate.id}`, estimate);
 }
 
 export function deleteEstimate(id: string) {
   saveEstimates(loadEstimates().filter((e) => e.id !== id));
+  deleteRequest(`/api/estimates/${id}`);
 }
 
 // ── Role Library ────────────────────────────────────────────────
@@ -169,7 +168,7 @@ export function loadRoleLibrary(): RoleLibraryEntry[] {
 
 export function saveRoleLibrary(roles: RoleLibraryEntry[]) {
   localStorage.setItem(ROLES_KEY, JSON.stringify(roles));
-  persistToServer();
+  postJson('/api/role-library', roles);
 }
 
 // ── Rate Cards ──────────────────────────────────────────────────
@@ -181,7 +180,7 @@ export function loadRateCards(): RateCard[] {
 
 export function saveRateCards(cards: RateCard[]) {
   localStorage.setItem(RATE_CARDS_KEY, JSON.stringify(cards));
-  persistToServer();
+  postJson('/api/rate-cards', cards);
 }
 
 // ── Role Templates ──────────────────────────────────────────────
@@ -222,5 +221,29 @@ export function loadRoleTemplates(): RoleTemplate[] {
 
 export function saveRoleTemplates(templates: RoleTemplate[]) {
   localStorage.setItem(ROLE_TEMPLATES_KEY, JSON.stringify(templates));
-  persistToServer();
+  postJson('/api/role-templates', templates);
+}
+
+// ── Settings ────────────────────────────────────────────────────
+
+export interface AppSettings {
+  dataDir: string;
+  defaultDataDir: string;
+  configDir: string;
+  dataDirExists: boolean;
+  needsSetup: boolean;
+}
+
+export async function loadSettings(): Promise<AppSettings> {
+  const res = await fetch('/api/settings');
+  return res.json();
+}
+
+export async function saveSettings(dataDir: string): Promise<{ ok: boolean; error?: string }> {
+  const res = await fetch('/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dataDir }),
+  });
+  return res.json();
 }

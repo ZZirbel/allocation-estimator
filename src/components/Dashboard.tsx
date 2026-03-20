@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Trash2, Copy, FileSpreadsheet, GitBranch } from 'lucide-react';
+import { Plus, Search, Trash2, Copy, FileSpreadsheet, GitBranch, Settings } from 'lucide-react';
 import type { Estimate, EstimateStatus } from '../types';
 import { loadEstimates, deleteEstimate, saveEstimate } from '../lib/store';
 import { getEstimateTotalCost, formatCurrency } from '../lib/calculations';
@@ -128,6 +128,9 @@ export default function Dashboard() {
             <input type="text" placeholder="Search estimates..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <button className="btn btn-ghost btn-sm" onClick={() => navigate('/summary')}>Summary</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/settings')} title="Settings">
+            <Settings size={16} />
+          </button>
           <button className="btn btn-primary" onClick={() => setShowNew(true)}>
             <Plus size={16} /> New Estimate
           </button>

@@ -38,7 +38,7 @@ function startServer() {
 
   serverProcess = spawn('node', [serverScript], {
     cwd: serverDir,
-    env: { ...process.env, PORT: String(PORT), DATA_DIR: getUserDataDir() },
+    env: { ...process.env, PORT: String(PORT), CONFIG_DIR: getUserDataDir() },
     stdio: 'pipe',
   });
 
