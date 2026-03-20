@@ -86,7 +86,7 @@ Click on a card to open it. The action buttons at the bottom of each card:
 ## Creating an Estimate
 
 1. Click **New Estimate** on the dashboard.
-2. Enter an **Estimate Name** (e.g., "Acme Corp WFM Implementation").
+2. Enter an **Estimate Name** (e.g., "Acme Corp Platform Migration").
 3. Enter a **Client** name (e.g., "Acme Corporation").
 4. Click **Create**.
 
@@ -325,13 +325,13 @@ Pre-configured sets of roles for common project types.
 ### Using a Template
 
 1. Click the **Git Branch** icon in the editor toolbar.
-2. Select a template (e.g., "Standard WFM Implementation").
+2. Select a template (e.g., "Standard Implementation").
 3. The template's roles are added to the current phase.
 
 ### Default Templates
 
-- **Standard WFM Implementation** — SA, PM, SSA, 3 Workstream Leads, 4 ICs.
-- **Discovery Only** — SSA, Senior IC, IC.
+- **Standard Implementation** — Role A, Role B, 2× Role C.
+- **Discovery** — Role B, Role C.
 
 Templates can be customized in the settings.
 

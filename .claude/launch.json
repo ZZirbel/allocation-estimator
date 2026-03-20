@@ -2,10 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "allocation-estimator",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.cjs"],
+      "port": 4000
+    },
+    {
       "name": "dev",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite"],
-      "port": 5174
+      "runtimeArgs": ["vite", "--port", "4000"],
+      "port": 4000
     }
   ]
 }

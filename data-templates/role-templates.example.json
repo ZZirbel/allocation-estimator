@@ -3,18 +3,18 @@
     "id": "standard-impl",
     "name": "Standard Implementation",
     "roles": [
-      { "title": "Project Manager", "hourlyRate": 200, "sellRate": 260 },
-      { "title": "Solution Architect", "hourlyRate": 225, "sellRate": 293 },
-      { "title": "Implementation Consultant", "hourlyRate": 175, "sellRate": 228 },
-      { "title": "Implementation Consultant", "hourlyRate": 175, "sellRate": 228 }
+      { "title": "Role A", "hourlyRate": 200, "sellRate": 260 },
+      { "title": "Role B", "hourlyRate": 225, "sellRate": 293 },
+      { "title": "Role C", "hourlyRate": 175, "sellRate": 228 },
+      { "title": "Role C", "hourlyRate": 175, "sellRate": 228 }
     ]
   },
   {
     "id": "discovery",
     "name": "Discovery",
     "roles": [
-      { "title": "Solution Architect", "hourlyRate": 225, "sellRate": 293 },
-      { "title": "Implementation Consultant", "hourlyRate": 175, "sellRate": 228 }
+      { "title": "Role B", "hourlyRate": 225, "sellRate": 293 },
+      { "title": "Role C", "hourlyRate": 175, "sellRate": 228 }
     ]
   }
 ]

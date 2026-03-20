@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog, globalShortcut } = require('electron');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
 const fs = require('fs');
@@ -354,6 +354,20 @@ app.on('ready', async () => {
   }
 
   createMainWindow();
+
+  // Explicit keyboard shortcuts (supplement menu accelerators)
+  globalShortcut.register('CmdOrCtrl+R', () => {
+    if (mainWindow && mainWindow.isFocused()) mainWindow.reload();
+  });
+  globalShortcut.register('CmdOrCtrl+Shift+R', () => {
+    if (mainWindow && mainWindow.isFocused()) mainWindow.webContents.reloadIgnoringCache();
+  });
+  globalShortcut.register('F5', () => {
+    if (mainWindow && mainWindow.isFocused()) mainWindow.reload();
+  });
+  globalShortcut.register('CmdOrCtrl+F5', () => {
+    if (mainWindow && mainWindow.isFocused()) mainWindow.webContents.reloadIgnoringCache();
+  });
 });
 
 app.on('window-all-closed', () => {
@@ -370,5 +384,6 @@ app.on('activate', () => {
 
 app.on('before-quit', () => {
   app.isQuitting = true;
+  globalShortcut.unregisterAll();
   stopServer();
 });

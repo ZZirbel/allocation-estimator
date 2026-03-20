@@ -48,15 +48,44 @@ function getDataDir() {
 }
 
 // ── Per-Estimate File Storage ───────────────────────────────────
-// estimates/          one JSON file per estimate
+// estimates/          one JSON file per estimate (<Name>-<id>.json)
 // role-library.json   shared role library
 // rate-cards.json     shared rate cards
 // role-templates.json shared role templates
+
+function slugify(str) {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 60);
+}
 
 function estimatesDir() {
   const dir = path.join(getDataDir(), 'estimates');
   ensureDir(dir);
   return dir;
+}
+
+// Build filename: <slugified-name>-<id>.json
+function estimateFileName(id, name) {
+  if (name) return `${slugify(name)}-${id}.json`;
+  return `${id}.json`;
+}
+
+// Find the file for a given estimate ID (name prefix may vary or be absent)
+function findEstimateFile(id) {
+  const dir = estimatesDir();
+  try {
+    const files = fs.readdirSync(dir);
+    // Match files ending with -<id>.json or exactly <id>.json
+    const match = files.find(
+      (f) => f === `${id}.json` || f.endsWith(`-${id}.json`)
+    );
+    return match ? path.join(dir, match) : null;
+  } catch {
+    return null;
+  }
 }
 
 function sharedFile(name) {
@@ -97,7 +126,7 @@ function migrateOldData() {
       ensureDir(estDir);
       for (const est of old.estimates) {
         if (est.id) {
-          writeJsonFile(path.join(estDir, `${est.id}.json`), est);
+          writeJsonFile(path.join(estDir, estimateFileName(est.id, est.name)), est);
         }
       }
     }
@@ -129,8 +158,12 @@ app.get('/api/settings', (_req, res) => {
 });
 
 app.post('/api/settings', (req, res) => {
-  const { dataDir, initializeData } = req.body;
+  let { dataDir, initializeData } = req.body;
   if (!dataDir) return res.status(400).json({ error: 'dataDir is required' });
+
+  // Sanitize: strip surrounding quotes, trim whitespace, resolve to absolute
+  dataDir = dataDir.trim().replace(/^["']+|["']+$/g, '');
+  dataDir = path.resolve(dataDir);
 
   // Create the directory if it doesn't exist
   try {
@@ -184,22 +217,32 @@ app.get('/api/estimates', (_req, res) => {
 });
 
 app.get('/api/estimates/:id', (req, res) => {
-  const file = path.join(estimatesDir(), `${req.params.id}.json`);
+  const file = findEstimateFile(req.params.id);
+  if (!file) return res.status(404).json({ error: 'Not found' });
   const data = readJsonFile(file);
   if (data) res.json(data);
   else res.status(404).json({ error: 'Not found' });
 });
 
 app.put('/api/estimates/:id', (req, res) => {
-  const file = path.join(estimatesDir(), `${req.params.id}.json`);
-  writeJsonFile(file, req.body);
+  const id = req.params.id;
+  const name = req.body.name;
+  const newFile = path.join(estimatesDir(), estimateFileName(id, name));
+
+  // Remove old file if name changed (filename would differ)
+  const oldFile = findEstimateFile(id);
+  if (oldFile && oldFile !== newFile) {
+    try { fs.unlinkSync(oldFile); } catch { /* ignore */ }
+  }
+
+  writeJsonFile(newFile, req.body);
   res.json({ ok: true });
 });
 
 app.delete('/api/estimates/:id', (req, res) => {
-  const file = path.join(estimatesDir(), `${req.params.id}.json`);
+  const file = findEstimateFile(req.params.id);
   try {
-    if (fs.existsSync(file)) fs.unlinkSync(file);
+    if (file && fs.existsSync(file)) fs.unlinkSync(file);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -259,7 +302,7 @@ app.post('/api/data', (req, res) => {
 
   if (estimates) {
     for (const est of estimates) {
-      if (est.id) writeJsonFile(path.join(dir, `${est.id}.json`), est);
+      if (est.id) writeJsonFile(path.join(dir, estimateFileName(est.id, est.name)), est);
     }
   }
   if (roleLibrary) writeJsonFile(sharedFile('role-library.json'), roleLibrary);

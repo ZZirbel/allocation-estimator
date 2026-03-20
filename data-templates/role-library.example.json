@@ -1,39 +1,39 @@
 [
   {
-    "id": "pm",
-    "title": "Project Manager",
+    "id": "role-a",
+    "title": "Role A",
     "defaultRate": 200,
     "defaultSellRate": 260,
     "offshoreRate": 100,
     "offshoreSellRate": 130
   },
   {
-    "id": "sa",
-    "title": "Solution Architect",
+    "id": "role-b",
+    "title": "Role B",
     "defaultRate": 225,
     "defaultSellRate": 293,
     "offshoreRate": 113,
     "offshoreSellRate": 147
   },
   {
-    "id": "ic",
-    "title": "Implementation Consultant",
+    "id": "role-c",
+    "title": "Role C",
     "defaultRate": 175,
     "defaultSellRate": 228,
     "offshoreRate": 88,
     "offshoreSellRate": 114
   },
   {
-    "id": "dev",
-    "title": "Developer",
+    "id": "role-d",
+    "title": "Role D",
     "defaultRate": 175,
     "defaultSellRate": 228,
     "offshoreRate": 88,
     "offshoreSellRate": 114
   },
   {
-    "id": "qa",
-    "title": "QA Analyst",
+    "id": "role-e",
+    "title": "Role E",
     "defaultRate": 150,
     "defaultSellRate": 195,
     "offshoreRate": 75,
