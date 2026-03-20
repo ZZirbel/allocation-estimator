@@ -30,6 +30,8 @@
 
 When you first launch the app, you'll see a **setup wizard** asking where to store your data.
 
+![Setup Wizard](images/setup-wizard.png)
+
 - **For personal use:** Click "Use Local Default" — data is stored on your machine only.
 - **For team use:** Paste the local path to a synced SharePoint folder. See the expandable guide in the setup wizard for step-by-step instructions.
 
@@ -40,6 +42,8 @@ After setup, you'll land on the **Dashboard**.
 ## Dashboard
 
 The dashboard is your home screen. It shows all your estimates as cards.
+
+![Dashboard](images/dashboard.png)
 
 ### Features
 
@@ -82,6 +86,8 @@ You'll be taken directly to the Estimate Editor.
 ## The Estimate Editor
 
 The editor is the main workspace for building your estimate.
+
+![Estimate Editor](images/estimate-editor.png)
 
 ### Header
 
@@ -138,6 +144,8 @@ Hover over the bottom-right corner of a cell to see the drag handle. Click and d
 1. Click **Add Role** below the grid.
 2. The modal shows your **role library** as clickable chips.
 3. Click a library role to add it with pre-configured rates, OR fill in the custom fields:
+
+![Add Role Modal](images/add-role-modal.png)
    - **Title** — Role name.
    - **Cost Rate** — Internal hourly cost rate.
    - **Sell Rate** — Client-facing hourly rate (visible when margin mode is on).
@@ -245,6 +253,8 @@ This fills every month in the range with the specified percentage.
 ## Context Menus
 
 Right-click on different parts of the grid for quick actions.
+
+![Context Menu](images/context-menu.png)
 
 ### Role Row (right-click on role name)
 - **Switch to Onshore/Offshore** — Toggle location.
@@ -379,6 +389,8 @@ The Excel file includes:
 
 Access via the **Summary** button on the main dashboard.
 
+![Summary Dashboard](images/summary-dashboard.png)
+
 ### Statistics Cards
 
 - **Total Estimates** — Count of all estimates.
@@ -400,6 +412,12 @@ A horizontal bar chart showing aggregate FTE demand by month across all active e
 ## Settings
 
 Access via the **gear icon** on the dashboard, or at any time via the `/settings` route.
+
+![Settings](images/settings.png)
+
+The settings page includes an expandable guide for setting up shared team access via SharePoint:
+
+![SharePoint Setup Guide](images/settings-sharepoint-guide.png)
 
 ### Data Directory
 

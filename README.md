@@ -2,6 +2,8 @@
 
 A desktop application for resource allocation and pricing estimation. Built for teams that need to plan project staffing, calculate costs, and generate professional estimates.
 
+![Dashboard](docs/images/dashboard.png)
+
 ## Features
 
 - **Multi-phase estimates** with independent role allocations per phase
@@ -64,6 +66,8 @@ This creates a Desktop shortcut and a Start Menu entry so you can pin the app to
 ### 6. Launch and configure
 
 Double-click the shortcut or run the exe. On first launch, you'll be prompted to set a **data directory**:
+
+![Setup Wizard](docs/images/setup-wizard.png)
 
 - **Personal use:** Click "Use Local Default" to store data on your machine only.
 - **Team use:** Paste the path to a synced SharePoint folder (see [Shared Team Setup](#shared-team-setup) below).
@@ -156,6 +160,34 @@ All user configuration is stored at:
 This file contains only the data directory path and is never committed to git.
 
 You can change the data directory at any time via the Settings page (gear icon on the dashboard).
+
+![Settings](docs/images/settings.png)
+
+## Screenshots
+
+### Estimate Editor
+
+The allocation grid with cost/sell rates, monthly percentage allocations, totals, and margin tracking:
+
+![Estimate Editor](docs/images/estimate-editor.png)
+
+### Add Role
+
+Add roles from a shared library with onshore/offshore rate switching, or define custom roles:
+
+![Add Role Modal](docs/images/add-role-modal.png)
+
+### Pipeline Summary
+
+Bird's-eye view of all estimates with pipeline value, won revenue, and FTE demand forecasting:
+
+![Summary Dashboard](docs/images/summary-dashboard.png)
+
+### Context Menus
+
+Right-click any role row for quick actions — switch location, duplicate, clear allocations, or remove:
+
+![Context Menu](docs/images/context-menu.png)
 
 ## Tech Stack
 
