@@ -1,0 +1,97 @@
+{
+  "name": "allocation-estimator-desktop",
+  "version": "1.0.0",
+  "description": "Desktop launcher for Allocation Estimator",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win dir",
+    "dist": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.allocationestimator.desktop",
+    "productName": "Allocation Estimator",
+    "forceCodeSigning": false,
+    "win": {
+      "target": ["dir"],
+      "icon": "icon.ico",
+      "signAndEditExecutable": false
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "splash.html",
+      "icon.ico"
+    ],
+    "extraResources": [
+      {
+        "from": "../server.cjs",
+        "to": "server/server.cjs"
+      },
+      {
+        "from": "../dist",
+        "to": "server/dist"
+      },
+      {
+        "from": "../node_modules",
+        "to": "server/node_modules",
+        "filter": [
+          "express/**",
+          "accepts/**",
+          "body-parser/**",
+          "bytes/**",
+          "content-disposition/**",
+          "content-type/**",
+          "cookie/**",
+          "cookie-signature/**",
+          "debug/**",
+          "depd/**",
+          "destroy/**",
+          "encodeurl/**",
+          "escape-html/**",
+          "etag/**",
+          "finalhandler/**",
+          "forwarded/**",
+          "fresh/**",
+          "http-errors/**",
+          "iconv-lite/**",
+          "inherits/**",
+          "ipaddr.js/**",
+          "media-typer/**",
+          "merge-descriptors/**",
+          "methods/**",
+          "mime-db/**",
+          "mime-types/**",
+          "ms/**",
+          "on-finished/**",
+          "once/**",
+          "parseurl/**",
+          "path-to-regexp/**",
+          "proxy-addr/**",
+          "qs/**",
+          "range-parser/**",
+          "raw-body/**",
+          "router/**",
+          "safe-buffer/**",
+          "safer-buffer/**",
+          "send/**",
+          "serve-static/**",
+          "setprototypeof/**",
+          "side-channel/**",
+          "statuses/**",
+          "toidentifier/**",
+          "type-is/**",
+          "unpipe/**",
+          "utils-merge/**",
+          "vary/**",
+          "wrappy/**",
+          ".package-lock.json"
+        ]
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}
