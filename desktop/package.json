@@ -33,6 +33,10 @@
         "to": "server/dist"
       },
       {
+        "from": "../data-templates",
+        "to": "server/data-templates"
+      },
+      {
         "from": "../node_modules",
         "to": "server/node_modules",
         "filter": [

@@ -23,6 +23,7 @@
 19. [Summary Dashboard](#summary-dashboard)
 20. [Settings](#settings)
 21. [Keyboard Shortcuts](#keyboard-shortcuts)
+22. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -34,6 +35,16 @@ When you first launch the app, you'll see a **setup wizard** asking where to sto
 
 - **For personal use:** Click "Use Local Default" — data is stored on your machine only.
 - **For team use:** Paste the local path to a synced SharePoint folder. See the expandable guide in the setup wizard for step-by-step instructions.
+
+### Initialize Data Directory
+
+If this is a **brand-new data directory** (first-time setup or setting up a new shared folder), check **"Initialize this data directory with starter files"**. This creates:
+
+- `role-library.json` — A starter role library with generic roles and rates you can customize.
+- `rate-cards.json` — An empty rate cards file ready for your team's rate cards.
+- `role-templates.json` — Starter role templates for common project types.
+
+> **Important:** Only the **first person** setting up a shared directory should check this box. Subsequent team members pointing to the same shared directory should leave it unchecked — the files will already exist from the first person's setup. If files already exist, they will not be overwritten.
 
 After setup, you'll land on the **Dashboard**.
 
@@ -425,6 +436,10 @@ The path where estimate data is stored. Change this to:
 - A synced SharePoint/OneDrive folder for team access.
 - A local folder for personal use.
 
+### Initialize Data Directory
+
+Check **"Initialize this data directory with starter files"** when pointing to a new, empty directory. This creates role-library.json, rate-cards.json, and role-templates.json with starter content. If any of these files already exist, they are skipped (not overwritten) and you'll see a warning listing which files were skipped.
+
 The settings page shows your current configuration including the config file location, data location, and storage format.
 
 ### Current Configuration
@@ -446,6 +461,52 @@ The settings page shows your current configuration including the config file loc
 | **Ctrl+F5** | Force reload (alternative) |
 
 These shortcuts work in the Electron desktop app. In a browser, standard browser shortcuts apply.
+
+---
+
+## Troubleshooting
+
+### Role library or templates are empty
+
+The role library and templates are stored as files in your data directory. If they're empty, the data directory wasn't initialized.
+
+**Fix:** Go to Settings (gear icon) → check "Initialize data directory" → Save. This copies starter files into your data directory without overwriting existing files.
+
+### "Some files were skipped" warning
+
+This appears when you check "Initialize data directory" on a directory that already has data files. Existing files are never overwritten.
+
+- **If expected:** No action needed — your data is safe.
+- **To reset to defaults:** Delete or rename the files in your data directory, then re-initialize.
+
+### Different team members see different data
+
+Verify that:
+1. Everyone has synced the **same** SharePoint folder to their machine.
+2. Each person's Settings → Data Directory points to their local copy of that synced folder.
+3. OneDrive sync is active and not paused (check the OneDrive icon in the system tray).
+
+### Data missing after app rebuild or reinstall
+
+Your estimates and shared data live in the **data directory** (separate from the app). The app's config file at `%APPDATA%/allocation-estimator-desktop/data/config.json` remembers where your data is. If data seems missing:
+1. Open Settings and verify the data directory path is correct.
+2. Check that the data directory folder still exists.
+3. If the config was lost, re-enter your data directory path — the data files should still be there.
+
+### App shows "Could not load settings"
+
+The Express server isn't running. This happens in browser-only mode (`npm run dev`). For full functionality:
+- Use the desktop app (Electron), which starts the server automatically, or
+- Run `npm run build && node server.cjs` for the full production server.
+
+### OneDrive sync conflicts
+
+If two people edit the **same estimate** simultaneously, OneDrive may create a conflict copy (e.g., `estimate-id-ConflictCopy.json`). To resolve:
+1. Open both files in a text editor and merge the changes you want to keep.
+2. Save the merged version as the original filename.
+3. Delete the conflict copy.
+
+> **Tip:** Conflicts are rare since each estimate is a separate file. Different people can work on different estimates simultaneously without issues.
 
 ---
 

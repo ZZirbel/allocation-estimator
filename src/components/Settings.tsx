@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FolderOpen, Save, RotateCcw, CheckCircle, AlertCircle, Info, Rocket, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, FolderOpen, Save, RotateCcw, CheckCircle, AlertCircle, Info, Rocket, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 import type { AppSettings } from '../lib/store';
 import { loadSettings, saveSettings } from '../lib/store';
 
@@ -88,8 +88,11 @@ export default function Settings({ setupMode, onSetupComplete }: Props) {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [dataDir, setDataDir] = useState('');
+  const [initializeData, setInitializeData] = useState(false);
+  const [showInitTooltip, setShowInitTooltip] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -104,13 +107,27 @@ export default function Settings({ setupMode, onSetupComplete }: Props) {
   async function handleSave() {
     setSaving(true);
     setMessage(null);
+    setWarnings([]);
     try {
-      const result = await saveSettings(dataDir);
+      const result = await saveSettings(dataDir, initializeData || undefined);
       if (result.ok) {
+        if (result.warnings && result.warnings.length > 0) {
+          setWarnings(result.warnings);
+        }
         if (setupMode && onSetupComplete) {
-          onSetupComplete();
+          if (result.warnings && result.warnings.length > 0) {
+            // Show warnings before completing setup
+            setMessage({ type: 'success', text: 'Data directory configured.' });
+            setSettings((prev) => prev ? { ...prev, dataDir, dataDirExists: true, needsSetup: false } : prev);
+            // Still let them continue after seeing warnings
+            setTimeout(() => onSetupComplete(), 3000);
+          } else {
+            onSetupComplete();
+          }
         } else {
-          setMessage({ type: 'success', text: 'Data directory updated. New data will be stored at this location.' });
+          setMessage({ type: 'success', text: initializeData
+            ? 'Data directory updated and initialized with starter files.'
+            : 'Data directory updated. New data will be stored at this location.' });
           setSettings((prev) => prev ? { ...prev, dataDir, dataDirExists: true, needsSetup: false } : prev);
         }
       } else {
@@ -179,10 +196,54 @@ export default function Settings({ setupMode, onSetupComplete }: Props) {
             </span>
           </div>
 
+          <div className="settings-field settings-checkbox-field">
+            <label className="settings-checkbox-label">
+              <input
+                type="checkbox"
+                checked={initializeData}
+                onChange={(e) => setInitializeData(e.target.checked)}
+              />
+              <span>Initialize this data directory with starter files</span>
+              <button
+                type="button"
+                className="settings-tooltip-trigger"
+                onClick={() => setShowInitTooltip(!showInitTooltip)}
+                aria-label="More info"
+              >
+                <HelpCircle size={14} />
+              </button>
+            </label>
+            {showInitTooltip && (
+              <div className="settings-tooltip-content">
+                <p>
+                  <strong>Check this if this is a brand-new data directory</strong> that has never been
+                  used with Allocation Estimator before. It will create starter files for the role library,
+                  rate cards, and role templates so you can get started immediately.
+                </p>
+                <p className="settings-tooltip-warn">
+                  <AlertCircle size={12} />
+                  If this directory already contains data files from another setup, existing files will
+                  <strong> not</strong> be overwritten, but duplicate configurations may cause confusion.
+                  Only check this for a fresh setup.
+                </p>
+              </div>
+            )}
+          </div>
+
           {message && (
             <div className={`settings-message ${message.type}`}>
               {message.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
               {message.text}
+            </div>
+          )}
+
+          {warnings.length > 0 && (
+            <div className="settings-message warning">
+              <AlertCircle size={16} />
+              <div>
+                <strong>Some files were skipped:</strong>
+                <ul>{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
+              </div>
             </div>
           )}
 
@@ -243,10 +304,54 @@ export default function Settings({ setupMode, onSetupComplete }: Props) {
           </span>
         </div>
 
+        <div className="settings-field settings-checkbox-field">
+          <label className="settings-checkbox-label">
+            <input
+              type="checkbox"
+              checked={initializeData}
+              onChange={(e) => setInitializeData(e.target.checked)}
+            />
+            <span>Initialize this data directory with starter files</span>
+            <button
+              type="button"
+              className="settings-tooltip-trigger"
+              onClick={() => setShowInitTooltip(!showInitTooltip)}
+              aria-label="More info"
+            >
+              <HelpCircle size={14} />
+            </button>
+          </label>
+          {showInitTooltip && (
+            <div className="settings-tooltip-content">
+              <p>
+                <strong>Check this if this is a brand-new data directory</strong> that has never been
+                used with Allocation Estimator before. It will create starter files for the role library,
+                rate cards, and role templates so you can get started immediately.
+              </p>
+              <p className="settings-tooltip-warn">
+                <AlertCircle size={12} />
+                If this directory already contains data files from another setup, existing files will
+                <strong> not</strong> be overwritten, but duplicate configurations may cause confusion.
+                Only check this for a fresh setup.
+              </p>
+            </div>
+          )}
+        </div>
+
         {message && (
           <div className={`settings-message ${message.type}`}>
             {message.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
             {message.text}
+          </div>
+        )}
+
+        {warnings.length > 0 && (
+          <div className="settings-message warning">
+            <AlertCircle size={16} />
+            <div>
+              <strong>Some files were skipped:</strong>
+              <ul>{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
+            </div>
           </div>
         )}
 
@@ -255,7 +360,7 @@ export default function Settings({ setupMode, onSetupComplete }: Props) {
           <button
             className="btn btn-primary"
             onClick={handleSave}
-            disabled={saving || !isDirty}
+            disabled={saving || (!isDirty && !initializeData)}
           >
             <Save size={14} /> {saving ? 'Saving...' : 'Save'}
           </button>

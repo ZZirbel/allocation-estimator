@@ -129,7 +129,7 @@ app.get('/api/settings', (_req, res) => {
 });
 
 app.post('/api/settings', (req, res) => {
-  const { dataDir } = req.body;
+  const { dataDir, initializeData } = req.body;
   if (!dataDir) return res.status(400).json({ error: 'dataDir is required' });
 
   // Create the directory if it doesn't exist
@@ -140,12 +140,32 @@ app.post('/api/settings', (req, res) => {
     return res.status(400).json({ error: `Cannot create directory: ${err.message}` });
   }
 
+  // If requested, seed the data directory with example/starter files
+  const warnings = [];
+  if (initializeData) {
+    const TEMPLATE_DIR = path.join(__dirname, 'data-templates');
+    const filesToCopy = [
+      { src: 'role-library.example.json', dest: 'role-library.json' },
+      { src: 'rate-cards.example.json', dest: 'rate-cards.json' },
+      { src: 'role-templates.example.json', dest: 'role-templates.json' },
+    ];
+    for (const { src, dest } of filesToCopy) {
+      const destPath = path.join(dataDir, dest);
+      const srcPath = path.join(TEMPLATE_DIR, src);
+      if (fs.existsSync(destPath)) {
+        warnings.push(`${dest} already exists — skipped to avoid overwriting.`);
+      } else if (fs.existsSync(srcPath)) {
+        fs.copyFileSync(srcPath, destPath);
+      }
+    }
+  }
+
   const config = loadConfig();
   config.dataDir = dataDir;
   config.configured = true;
   saveConfig(config);
 
-  res.json({ ok: true, dataDir });
+  res.json({ ok: true, dataDir, warnings: warnings.length > 0 ? warnings : undefined });
 });
 
 // ── API: Estimates (per-file) ───────────────────────────────────

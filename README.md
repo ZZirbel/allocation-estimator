@@ -71,6 +71,7 @@ Double-click the shortcut or run the exe. On first launch, you'll be prompted to
 
 - **Personal use:** Click "Use Local Default" to store data on your machine only.
 - **Team use:** Paste the path to a synced SharePoint folder (see [Shared Team Setup](#shared-team-setup) below).
+- **Initialize data directory:** Check this box if the directory is brand new. This creates starter files (role library, rate cards, role templates) so you can begin immediately. Do **not** check this if pointing to a directory that already has data from another user's setup.
 
 ## Shared Team Setup
 
@@ -85,9 +86,9 @@ The app stores data as JSON files in a configurable directory. To share data acr
    C:\Users\YourName\YourOrg\SiteName - Documents\Allocation Estimator
    ```
 
-3. **Configure the app.** On first launch (or in Settings), paste the local synced folder path as the data directory.
+3. **Configure the app (first team member).** On first launch, paste the local synced folder path as the data directory and **check "Initialize data directory"**. This creates the starter data files (role library, rate cards, templates) in the shared folder.
 
-4. **Each team member repeats steps 2-3.** Everyone syncs the same SharePoint folder. The local paths will differ per user, but they all point to the same SharePoint location.
+4. **Each additional team member repeats steps 2-3** but does **not** check "Initialize data directory" — the files already exist from the first person's setup. They just paste their own local synced path and click Save.
 
 ### How it works
 
@@ -106,6 +107,8 @@ The app stores data as JSON files in a configurable directory. To share data acr
   rate-cards.json          # Shared rate cards
   role-templates.json      # Shared role templates
 ```
+
+These shared files are created automatically when you check **"Initialize data directory"** during setup. Starter templates are stored in `data-templates/` in the repository and can be customized before initialization.
 
 ## Development
 
@@ -188,6 +191,47 @@ Bird's-eye view of all estimates with pipeline value, won revenue, and FTE deman
 Right-click any role row for quick actions — switch location, duplicate, clear allocations, or remove:
 
 ![Context Menu](docs/images/context-menu.png)
+
+## Troubleshooting
+
+### Role library / templates are empty
+
+If you launch the app and the role library or templates are empty, it usually means the data directory was not initialized with starter files.
+
+**Fix:** Go to Settings (gear icon), check **"Initialize data directory"**, and click Save. This copies the starter files into your data directory.
+
+### "Some files were skipped" warning during setup
+
+This appears when you check "Initialize data directory" but the directory already contains `role-library.json`, `rate-cards.json`, or `role-templates.json`. Existing files are **not** overwritten to prevent data loss.
+
+**If intentional:** No action needed — your existing data is preserved.
+
+**If you want to reset to defaults:** Manually delete the files from the data directory (or rename them), then re-run setup with initialization checked.
+
+### Multiple team members see different data
+
+Everyone must point to the same synced SharePoint folder. Verify that:
+- Each person has the SharePoint folder synced via OneDrive
+- Each person's data directory path in Settings points to their local copy of that synced folder
+- OneDrive sync is running and not paused
+
+### App shows "Could not load settings"
+
+The Express server isn't running. This can happen in browser-only dev mode (`npm run dev`). For full functionality including settings and file persistence, run the Express server:
+
+```bash
+npm run build && node server.cjs
+```
+
+Or use the Electron desktop app which starts the server automatically.
+
+### Data not persisting after rebuild
+
+The Electron app stores config at `%APPDATA%/allocation-estimator-desktop/data/config.json`. This config points to your data directory, which is **outside** the git repository and survives rebuilds. If data is missing after a rebuild, check that:
+- The config file still exists and points to the correct directory
+- The data directory itself hasn't been moved or deleted
+
+For more details, see the [User Guide](docs/user-guide.md).
 
 ## Tech Stack
 

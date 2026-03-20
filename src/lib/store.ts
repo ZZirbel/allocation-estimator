@@ -151,19 +151,10 @@ export function deleteEstimate(id: string) {
 
 // ── Role Library ────────────────────────────────────────────────
 
-const DEFAULT_ROLES: RoleLibraryEntry[] = [
-  { id: 'sa', title: 'Strategic Advisor', defaultRate: 300, defaultSellRate: 390, offshoreRate: 150, offshoreSellRate: 195 },
-  { id: 'pm', title: 'Project Manager', defaultRate: 250, defaultSellRate: 325, offshoreRate: 125, offshoreSellRate: 163 },
-  { id: 'ssa', title: 'Senior Solution Architect', defaultRate: 275, defaultSellRate: 358, offshoreRate: 138, offshoreSellRate: 179 },
-  { id: 'wl', title: 'Workstream Lead', defaultRate: 250, defaultSellRate: 325, offshoreRate: 125, offshoreSellRate: 163 },
-  { id: 'sic', title: 'Senior Implementation Consultant', defaultRate: 225, defaultSellRate: 293, offshoreRate: 113, offshoreSellRate: 147 },
-  { id: 'ic', title: 'Implementation Consultant', defaultRate: 200, defaultSellRate: 260, offshoreRate: 100, offshoreSellRate: 130 },
-];
-
 export function loadRoleLibrary(): RoleLibraryEntry[] {
   const raw = localStorage.getItem(ROLES_KEY);
   if (raw) return JSON.parse(raw);
-  return DEFAULT_ROLES;
+  return [];
 }
 
 export function saveRoleLibrary(roles: RoleLibraryEntry[]) {
@@ -185,38 +176,10 @@ export function saveRateCards(cards: RateCard[]) {
 
 // ── Role Templates ──────────────────────────────────────────────
 
-const DEFAULT_TEMPLATES: RoleTemplate[] = [
-  {
-    id: 'standard-wfm',
-    name: 'Standard WFM Implementation',
-    roles: [
-      { title: 'Strategic Advisor', hourlyRate: 300, sellRate: 390 },
-      { title: 'Project Manager', hourlyRate: 250, sellRate: 325 },
-      { title: 'Senior Solution Architect', hourlyRate: 275, sellRate: 358 },
-      { title: 'Workstream Lead', hourlyRate: 250, sellRate: 325 },
-      { title: 'Workstream Lead', hourlyRate: 250, sellRate: 325 },
-      { title: 'Workstream Lead', hourlyRate: 250, sellRate: 325 },
-      { title: 'Implementation Consultant', hourlyRate: 200, sellRate: 260 },
-      { title: 'Implementation Consultant', hourlyRate: 200, sellRate: 260 },
-      { title: 'Implementation Consultant', hourlyRate: 200, sellRate: 260 },
-      { title: 'Implementation Consultant', hourlyRate: 200, sellRate: 260 },
-    ],
-  },
-  {
-    id: 'discovery-only',
-    name: 'Discovery Only',
-    roles: [
-      { title: 'Senior Solution Architect', hourlyRate: 275, sellRate: 358 },
-      { title: 'Senior Implementation Consultant', hourlyRate: 225, sellRate: 293 },
-      { title: 'Implementation Consultant', hourlyRate: 200, sellRate: 260 },
-    ],
-  },
-];
-
 export function loadRoleTemplates(): RoleTemplate[] {
   const raw = localStorage.getItem(ROLE_TEMPLATES_KEY);
   if (raw) return JSON.parse(raw);
-  return DEFAULT_TEMPLATES;
+  return [];
 }
 
 export function saveRoleTemplates(templates: RoleTemplate[]) {
@@ -239,11 +202,11 @@ export async function loadSettings(): Promise<AppSettings> {
   return res.json();
 }
 
-export async function saveSettings(dataDir: string): Promise<{ ok: boolean; error?: string }> {
+export async function saveSettings(dataDir: string, initializeData?: boolean): Promise<{ ok: boolean; error?: string; warnings?: string[] }> {
   const res = await fetch('/api/settings', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dataDir }),
+    body: JSON.stringify({ dataDir, initializeData }),
   });
   return res.json();
 }

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "pm",
+    "title": "Project Manager",
+    "defaultRate": 200,
+    "defaultSellRate": 260,
+    "offshoreRate": 100,
+    "offshoreSellRate": 130
+  },
+  {
+    "id": "sa",
+    "title": "Solution Architect",
+    "defaultRate": 225,
+    "defaultSellRate": 293,
+    "offshoreRate": 113,
+    "offshoreSellRate": 147
+  },
+  {
+    "id": "ic",
+    "title": "Implementation Consultant",
+    "defaultRate": 175,
+    "defaultSellRate": 228,
+    "offshoreRate": 88,
+    "offshoreSellRate": 114
+  },
+  {
+    "id": "dev",
+    "title": "Developer",
+    "defaultRate": 175,
+    "defaultSellRate": 228,
+    "offshoreRate": 88,
+    "offshoreSellRate": 114
+  },
+  {
+    "id": "qa",
+    "title": "QA Analyst",
+    "defaultRate": 150,
+    "defaultSellRate": 195,
+    "offshoreRate": 75,
+    "offshoreSellRate": 98
+  }
+]
