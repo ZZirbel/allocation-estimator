@@ -1,10 +1,11 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog, globalShortcut } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const http = require('http');
 
 const PORT = 4000;
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 let mainWindow = null;
 let splashWindow = null;
 let tray = null;
@@ -16,6 +17,95 @@ let trayNotified = false;
 function getUserDataDir() {
   return path.join(app.getPath('userData'), 'data');
 }
+
+// ── Update Check Config ─────────────────────────────────────────
+
+function getUpdateConfigPath() {
+  return path.join(getUserDataDir(), 'update-check.json');
+}
+
+function loadUpdateConfig() {
+  try {
+    const configPath = getUpdateConfigPath();
+    if (fs.existsSync(configPath)) {
+      return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('[update] Failed to load update config:', e.message);
+  }
+  return { lastCheck: 0 };
+}
+
+function saveUpdateConfig(config) {
+  try {
+    const configPath = getUpdateConfigPath();
+    const dir = path.dirname(configPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  } catch (e) {
+    console.error('[update] Failed to save update config:', e.message);
+  }
+}
+
+function shouldCheckForUpdates() {
+  const config = loadUpdateConfig();
+  const now = Date.now();
+  return (now - config.lastCheck) > ONE_DAY_MS;
+}
+
+// ── Update Check Functions ──────────────────────────────────────
+
+function checkForUpdatesAvailable() {
+  const repoRoot = getRepoRoot();
+
+  if (!fs.existsSync(path.join(repoRoot, '.git'))) {
+    return { available: false, error: 'Not a git repository' };
+  }
+
+  try {
+    // Fetch latest from origin
+    execSync('git fetch origin main', {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      timeout: 15000,
+      stdio: 'pipe',
+    });
+
+    // Check how many commits behind
+    const behind = execSync('git rev-list HEAD..origin/main --count', {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      timeout: 5000,
+    }).trim();
+
+    const commitsBehind = parseInt(behind, 10) || 0;
+
+    // Update last check time
+    saveUpdateConfig({ lastCheck: Date.now() });
+
+    return { available: commitsBehind > 0, commitsBehind };
+  } catch (e) {
+    console.error('[update] Check failed:', e.message);
+    return { available: false, error: e.message };
+  }
+}
+
+// ── IPC Handlers ────────────────────────────────────────────────
+
+ipcMain.handle('check-for-updates', async () => {
+  return checkForUpdatesAvailable();
+});
+
+ipcMain.handle('perform-update', async () => {
+  try {
+    await pullUpdates();
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
 
 // Paths — works both in dev and packaged
 function getServerDir() {

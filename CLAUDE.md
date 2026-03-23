@@ -232,6 +232,15 @@ interface Role {
 - Keyboard shortcuts: Ctrl+R (reload), Ctrl+U (git pull), Ctrl+Q (quit)
 - Tray icon for background operation
 
+### Auto-Update System
+- **Daily check**: On app startup, checks if 24+ hours since last update check
+- **Update config**: Stored in `%APPDATA%/allocation-estimator-desktop/data/update-check.json`
+- **UI notification**: "New Version Available" badge appears in Dashboard header
+- **User-initiated**: Clicking badge shows confirmation modal, then pulls/rebuilds/reloads
+- **IPC communication**: `preload.js` exposes `electronAPI` to renderer via contextBridge
+  - `checkForUpdates()`: Runs `git fetch` and compares HEAD to origin/main
+  - `performUpdate()`: Triggers existing `pullUpdates()` function
+
 ## Troubleshooting
 
 | Issue | Solution |

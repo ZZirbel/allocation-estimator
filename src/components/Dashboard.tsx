@@ -1,10 +1,23 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Trash2, Copy, FileSpreadsheet, GitBranch, Settings } from 'lucide-react';
+import { Plus, Search, Trash2, Copy, FileSpreadsheet, GitBranch, Settings, Download } from 'lucide-react';
 import type { Estimate, EstimateStatus } from '../types';
 import { loadEstimates, deleteEstimate, saveEstimate } from '../lib/store';
 import { getEstimateTotalSell, formatCurrency } from '../lib/calculations';
 import { uid } from '../lib/ids';
+
+// Electron API exposed via preload.js (only available in Electron)
+interface ElectronAPI {
+  checkForUpdates: () => Promise<{ available: boolean; commitsBehind?: number; error?: string }>;
+  performUpdate: () => Promise<{ success: boolean; error?: string }>;
+  isElectron: boolean;
+}
+
+declare global {
+  interface Window {
+    electronAPI?: ElectronAPI;
+  }
+}
 
 const STATUS_FILTERS: { value: EstimateStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -48,6 +61,38 @@ export default function Dashboard() {
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [newClient, setNewClient] = useState('');
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [updating, setUpdating] = useState(false);
+
+  // Check for updates on mount (only in Electron)
+  useEffect(() => {
+    const checkUpdates = async () => {
+      if (!window.electronAPI?.isElectron) return;
+      try {
+        const result = await window.electronAPI.checkForUpdates();
+        if (result.available) {
+          setUpdateAvailable(true);
+        }
+      } catch (e) {
+        console.log('[update] Check failed:', e);
+      }
+    };
+    checkUpdates();
+  }, []);
+
+  async function handleUpdate() {
+    if (!window.electronAPI) return;
+    setUpdating(true);
+    try {
+      await window.electronAPI.performUpdate();
+      // App will reload after update, so no need to handle success
+    } catch (e) {
+      console.error('[update] Failed:', e);
+      setUpdating(false);
+      setShowUpdateModal(false);
+    }
+  }
 
   const filtered = useMemo(() => {
     let list = estimates.filter((e) => !e.parentId); // exclude scenarios from main list
@@ -121,6 +166,12 @@ export default function Dashboard() {
         <div className="dashboard-title">
           <FileSpreadsheet size={28} />
           <h1>Allocation Estimator</h1>
+          {updateAvailable && (
+            <button className="update-badge" onClick={() => setShowUpdateModal(true)}>
+              <Download size={14} />
+              New Version Available
+            </button>
+          )}
         </div>
         <div className="dashboard-actions">
           <div className="search-box">
@@ -160,6 +211,28 @@ export default function Dashboard() {
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setShowNew(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={handleCreate}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUpdateModal && (
+        <div className="modal-overlay" onClick={() => !updating && setShowUpdateModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2><Download size={20} /> Update Available</h2>
+            <p style={{ margin: '16px 0', color: 'var(--text-muted)' }}>
+              A new version of Allocation Estimator is available. Would you like to update now?
+            </p>
+            <p style={{ margin: '16px 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+              The app will pull the latest changes, rebuild, and reload automatically.
+            </p>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setShowUpdateModal(false)} disabled={updating}>
+                Later
+              </button>
+              <button className="btn btn-primary" onClick={handleUpdate} disabled={updating}>
+                {updating ? 'Updating...' : 'Update Now'}
+              </button>
             </div>
           </div>
         </div>
