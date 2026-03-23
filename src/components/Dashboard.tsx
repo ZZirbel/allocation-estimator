@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Trash2, Copy, FileSpreadsheet, GitBranch, Settings, Download } from 'lucide-react';
+import { Plus, Search, Trash2, Copy, FileSpreadsheet, GitBranch, Settings, Download, BookOpen } from 'lucide-react';
 import type { Estimate, EstimateStatus } from '../types';
 import { loadEstimates, deleteEstimate, saveEstimate } from '../lib/store';
 import { getEstimateTotalSell, formatCurrency } from '../lib/calculations';
@@ -151,11 +151,12 @@ export default function Dashboard() {
   }
 
   function handleCreateScenario(est: Estimate) {
+    const existingScenarios = estimates.filter((e) => e.parentId === est.id);
     const scenario: Estimate = {
       ...JSON.parse(JSON.stringify(est)),
       id: uid(),
       parentId: est.id,
-      scenarioName: `Scenario ${estimates.filter((e) => e.parentId === est.id).length + 2}`,
+      scenarioName: `Scenario ${existingScenarios.length + 2}`,
       status: 'draft' as const,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -189,6 +190,9 @@ export default function Dashboard() {
             <input type="text" placeholder="Search estimates..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <button className="btn btn-ghost btn-sm" onClick={() => navigate('/summary')}>Summary</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/guide')} title="User Guide">
+            <BookOpen size={16} />
+          </button>
           <button className="btn btn-ghost btn-sm" onClick={() => navigate('/settings')} title="Settings">
             <Settings size={16} />
           </button>
@@ -278,6 +282,9 @@ export default function Dashboard() {
                 </div>
                 {scenarios.length > 0 && (
                   <div className="card-scenarios">
+                    <span className="badge badge-scenario-original" onClick={(e) => { e.stopPropagation(); navigate(`/estimate/${est.id}`); }}>
+                      Original
+                    </span>
                     {scenarios.map((s) => (
                       <span key={s.id} className="badge badge-draft" onClick={(e) => { e.stopPropagation(); navigate(`/estimate/${s.id}`); }}>
                         {s.scenarioName}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FolderOpen, Save, RotateCcw, CheckCircle, AlertCircle, Info, Rocket, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
+import { ArrowLeft, FolderOpen, Save, RotateCcw, CheckCircle, AlertCircle, Info, Rocket, ChevronDown, ChevronUp, HelpCircle, BookOpen } from 'lucide-react';
 import type { AppSettings } from '../lib/store';
 import { loadSettings, saveSettings, clearLocalData } from '../lib/store';
 
@@ -378,6 +378,16 @@ export default function Settings({ setupMode, onSetupComplete: _onSetupComplete 
           <span className="settings-detail-label">Storage format</span>
           <span>Per-estimate JSON files + shared role library, rate cards, templates</span>
         </div>
+      </div>
+
+      <div className="settings-card settings-card-secondary">
+        <h3><BookOpen size={18} /> Help & Documentation</h3>
+        <p className="settings-desc">
+          Learn how to use all features of Allocation Estimator.
+        </p>
+        <button className="btn btn-primary" onClick={() => navigate('/guide')}>
+          <BookOpen size={14} /> Open User Guide
+        </button>
       </div>
     </div>
   );

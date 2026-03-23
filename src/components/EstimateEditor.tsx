@@ -11,9 +11,12 @@ import {
   GitBranch,
   FileText,
   Layers,
+  Trash2,
+  Eye,
+  RotateCcw,
 } from 'lucide-react';
 import type { Estimate, EstimatePhase, EstimateStatus, EstimateVersion, RoleTemplate } from '../types';
-import { loadEstimate, saveEstimate, loadRoleTemplates } from '../lib/store';
+import { loadEstimate, loadEstimates, saveEstimate, loadRoleTemplates } from '../lib/store';
 import { getEstimateTotalCost, getEstimateTotalSell, getEstimateMargin, formatCurrency, formatPercent } from '../lib/calculations';
 import { exportEstimateToXlsx } from '../lib/excelExport';
 import { uid } from '../lib/ids';
@@ -53,6 +56,10 @@ export default function EstimateEditor() {
   const [showStatusSelect, setShowStatusSelect] = useState(false);
   const [versionName, setVersionName] = useState('');
   const [saved, setSaved] = useState(true);
+  const [showScenarioSwitch, setShowScenarioSwitch] = useState(false);
+  const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
+  const [compareVersionId, setCompareVersionId] = useState<string | null>(null);
+  const [showCompare, setShowCompare] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -106,6 +113,14 @@ export default function EstimateEditor() {
   const margin = getEstimateMargin(estimate);
   const templates = loadRoleTemplates();
 
+  // Scenario info
+  const isScenario = !!estimate.parentId;
+  const allEstimates = loadEstimates();
+  const parentEstimate = isScenario ? allEstimates.find(e => e.id === estimate.parentId) : null;
+  const relatedScenarios = isScenario
+    ? allEstimates.filter(e => e.parentId === estimate.parentId || e.id === estimate.parentId)
+    : allEstimates.filter(e => e.parentId === estimate.id);
+
   function handlePhaseChange(updated: EstimatePhase) {
     handleChange({
       ...estimate!,
@@ -139,17 +154,54 @@ export default function EstimateEditor() {
     };
     handleChange({ ...estimate!, versions: [...estimate!.versions, version] });
     setVersionName('');
-    setShowVersions(false);
+    setActiveVersionId(version.id);
   }
 
-  function restoreVersion(version: EstimateVersion) {
+  function updateVersion(versionId: string) {
+    const snapshot = JSON.stringify({ ...estimate, versions: [] });
+    const updatedVersions = estimate!.versions.map(v =>
+      v.id === versionId
+        ? { ...v, snapshot, createdAt: new Date().toISOString() }
+        : v
+    );
+    handleChange({ ...estimate!, versions: updatedVersions });
+  }
+
+  function deleteVersion(versionId: string) {
+    if (!confirm('Delete this version? This cannot be undone.')) return;
+    const updatedVersions = estimate!.versions.filter(v => v.id !== versionId);
+    handleChange({ ...estimate!, versions: updatedVersions });
+    if (activeVersionId === versionId) setActiveVersionId(null);
+    if (compareVersionId === versionId) setCompareVersionId(null);
+  }
+
+  function viewVersion(version: EstimateVersion) {
     const restored = JSON.parse(version.snapshot) as Estimate;
     restored.id = estimate!.id;
     restored.versions = estimate!.versions;
     restored.updatedAt = new Date().toISOString();
     handleChange(restored);
     setActivePhaseId(restored.phases[0]?.id || '');
+    setActiveVersionId(version.id);
     setShowVersions(false);
+  }
+
+  function exitVersionView() {
+    setActiveVersionId(null);
+  }
+
+  function getVersionTotals(version: EstimateVersion) {
+    try {
+      const data = JSON.parse(version.snapshot) as Estimate;
+      return {
+        sell: getEstimateTotalSell(data),
+        cost: getEstimateTotalCost(data),
+        phases: data.phases.length,
+        roles: data.phases.reduce((sum, p) => sum + p.roles.length, 0),
+      };
+    } catch {
+      return { sell: 0, cost: 0, phases: 0, roles: 0 };
+    }
   }
 
   function applyTemplate(template: RoleTemplate) {
@@ -189,6 +241,30 @@ export default function EstimateEditor() {
             <input className="editor-title" value={estimate.name} onChange={(e) => handleChange({ ...estimate, name: e.target.value })} placeholder="Estimate name" />
             <input className="editor-subtitle" value={estimate.client} onChange={(e) => handleChange({ ...estimate, client: e.target.value })} placeholder="Client name" />
           </div>
+          {(isScenario || relatedScenarios.length > 0) && (
+            <div className="scenario-switcher" style={{ position: 'relative' }}>
+              <button className="scenario-indicator" onClick={() => setShowScenarioSwitch(!showScenarioSwitch)}>
+                <GitBranch size={14} />
+                {isScenario ? estimate.scenarioName : 'Original'}
+              </button>
+              {showScenarioSwitch && (
+                <div className="scenario-dropdown" onClick={() => setShowScenarioSwitch(false)}>
+                  {!isScenario && <div className="scenario-dropdown-item active">Original (current)</div>}
+                  {isScenario && parentEstimate && (
+                    <button className="scenario-dropdown-item" onClick={() => navigate(`/estimate/${parentEstimate.id}`)}>
+                      Original
+                    </button>
+                  )}
+                  {relatedScenarios.filter(s => s.id !== estimate.id && s.parentId).map((s) => (
+                    <button key={s.id} className={`scenario-dropdown-item ${s.id === estimate.id ? 'active' : ''}`} onClick={() => navigate(`/estimate/${s.id}`)}>
+                      {s.scenarioName}
+                    </button>
+                  ))}
+                  {isScenario && <div className="scenario-dropdown-item active">{estimate.scenarioName} (current)</div>}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="editor-meta">
           <div className="status-select" style={{ position: 'relative' }}>
@@ -210,6 +286,12 @@ export default function EstimateEditor() {
             <span className="editor-margin" title="Margin">
               Cost: {formatCurrency(totalCost)} ({formatPercent(margin)} margin)
             </span>
+          )}
+          {activeVersionId && (
+            <button className="version-badge" onClick={() => setShowVersions(true)}>
+              <Clock size={12} />
+              {estimate.versions.find(v => v.id === activeVersionId)?.name || 'Version'}
+            </button>
           )}
           <div className="editor-actions">
             <button className="btn btn-ghost btn-sm btn-icon" onClick={() => handleChange({ ...estimate, showMargin: !estimate.showMargin })} title={estimate.showMargin ? 'Hide cost & margin' : 'Show cost & margin'}>
@@ -284,27 +366,99 @@ export default function EstimateEditor() {
       {showVersions && (
         <div className="modal-overlay" onClick={() => setShowVersions(false)}>
           <div className="modal modal-wide" onClick={(e) => e.stopPropagation()}>
-            <h2>Version History</h2>
-            <div className="form-row" style={{ marginBottom: 16 }}>
-              <div className="form-group" style={{ flex: 1 }}>
-                <input value={versionName} onChange={(e) => setVersionName(e.target.value)} placeholder="Version name (e.g. v1 - Initial)" />
+            <h2><Clock size={20} /> Version History</h2>
+
+            {activeVersionId && (
+              <div className="version-active-banner">
+                <span>Viewing: <strong>{estimate.versions.find(v => v.id === activeVersionId)?.name}</strong></span>
+                <button className="btn btn-ghost btn-sm" onClick={exitVersionView}>
+                  <RotateCcw size={14} /> Exit Version View
+                </button>
               </div>
-              <button className="btn btn-primary" onClick={saveVersion} style={{ alignSelf: 'flex-end' }}>Save Snapshot</button>
+            )}
+
+            <div className="version-save-row">
+              <input
+                value={versionName}
+                onChange={(e) => setVersionName(e.target.value)}
+                placeholder="Version name (e.g. v1 - Initial)"
+              />
+              <button className="btn btn-primary" onClick={saveVersion} disabled={!versionName.trim()}>
+                <Save size={14} /> Save New Version
+              </button>
             </div>
+
             {estimate.versions.length === 0 ? (
               <p className="modal-desc">No versions saved yet. Save a snapshot to preserve the current state.</p>
             ) : (
-              <div className="version-list">
-                {estimate.versions.map((v) => (
-                  <div key={v.id} className="version-item">
-                    <div>
-                      <strong>{v.name}</strong>
-                      <span style={{ color: '#64748b', fontSize: 12, marginLeft: 8 }}>{new Date(v.createdAt).toLocaleString()}</span>
-                    </div>
-                    <button className="btn btn-ghost btn-sm" onClick={() => restoreVersion(v)}>Restore</button>
-                  </div>
-                ))}
-              </div>
+              <>
+                <div className="version-compare-toggle">
+                  <label className="settings-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={showCompare}
+                      onChange={(e) => {
+                        setShowCompare(e.target.checked);
+                        if (!e.target.checked) setCompareVersionId(null);
+                      }}
+                    />
+                    <span>Compare mode</span>
+                  </label>
+                  {showCompare && (
+                    <select
+                      value={compareVersionId || ''}
+                      onChange={(e) => setCompareVersionId(e.target.value || null)}
+                    >
+                      <option value="">Select version to compare...</option>
+                      {estimate.versions.map(v => (
+                        <option key={v.id} value={v.id}>{v.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div className="version-list">
+                  {estimate.versions.slice().reverse().map((v) => {
+                    const totals = getVersionTotals(v);
+                    const isActive = activeVersionId === v.id;
+                    const compareWith = compareVersionId && compareVersionId !== v.id ? estimate.versions.find(cv => cv.id === compareVersionId) : null;
+                    const compareTotals = compareWith ? getVersionTotals(compareWith) : null;
+
+                    return (
+                      <div key={v.id} className={`version-item ${isActive ? 'version-item-active' : ''}`}>
+                        <div className="version-info">
+                          <div className="version-header">
+                            <strong>{v.name}</strong>
+                            {isActive && <span className="badge badge-primary">Current</span>}
+                          </div>
+                          <span className="version-date">{new Date(v.createdAt).toLocaleString()}</span>
+                          <div className="version-stats">
+                            <span>{totals.phases} phases</span>
+                            <span>{totals.roles} roles</span>
+                            <span>{formatCurrency(totals.sell)}</span>
+                            {showCompare && compareTotals && (
+                              <span className={totals.sell > compareTotals.sell ? 'version-diff-up' : totals.sell < compareTotals.sell ? 'version-diff-down' : ''}>
+                                {totals.sell > compareTotals.sell ? '+' : ''}{formatCurrency(totals.sell - compareTotals.sell)} vs {compareWith?.name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="version-actions">
+                          <button className="btn btn-ghost btn-sm" onClick={() => viewVersion(v)} title="View this version">
+                            <Eye size={14} />
+                          </button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => updateVersion(v.id)} title="Update with current changes">
+                            <Save size={14} />
+                          </button>
+                          <button className="btn btn-ghost btn-sm btn-danger-text" onClick={() => deleteVersion(v.id)} title="Delete version">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setShowVersions(false)}>Close</button>

@@ -264,6 +264,16 @@ function createAppMenu() {
       label: 'File',
       submenu: [
         {
+          label: 'User Guide',
+          accelerator: 'F1',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.loadURL(`http://localhost:${PORT}/guide`);
+            }
+          },
+        },
+        { type: 'separator' },
+        {
           label: 'Pull Updates',
           accelerator: 'CmdOrCtrl+U',
           click: () => pullUpdates(),

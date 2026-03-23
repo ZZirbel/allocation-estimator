@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import EstimateEditor from './components/EstimateEditor';
 import SummaryDashboard from './components/SummaryDashboard';
 import Settings from './components/Settings';
+import UserGuide from './components/UserGuide';
 import { loadSettings, hydrateFromServer } from './lib/store';
 import './styles.css';
 
@@ -51,6 +52,7 @@ export default function App() {
       <Route path="/estimate/:id" element={<EstimateEditor />} />
       <Route path="/summary" element={<SummaryDashboard />} />
       <Route path="/settings" element={<Settings />} />
+      <Route path="/guide" element={<UserGuide />} />
     </Routes>
   );
 }
