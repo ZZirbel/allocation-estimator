@@ -16,6 +16,11 @@ export function clearLocalData(): void {
   sessionStorage.removeItem(HYDRATED_KEY);
 }
 
+// Clear hydration flag (allows re-fetch on page reload)
+export function clearHydrationFlag(): void {
+  sessionStorage.removeItem(HYDRATED_KEY);
+}
+
 // ── Server sync ─────────────────────────────────────────────────
 
 function postJson(url: string, data: unknown) {
@@ -42,9 +47,12 @@ function deleteRequest(url: string) {
  * On startup, pull data from the server files and populate localStorage.
  * This ensures data persists across Electron rebuilds and is shared
  * when pointing to a OneDrive/SharePoint folder.
+ *
+ * @param force - If true, always re-fetch even if already hydrated this session
  */
-export async function hydrateFromServer(): Promise<void> {
-  if (sessionStorage.getItem(HYDRATED_KEY)) return;
+export async function hydrateFromServer(force = false): Promise<void> {
+  // Skip if already hydrated this page load (not session) unless forced
+  if (!force && sessionStorage.getItem(HYDRATED_KEY)) return;
 
   try {
     const [estRes, rolesRes, cardsRes, tmplRes] = await Promise.all([
@@ -56,27 +64,20 @@ export async function hydrateFromServer(): Promise<void> {
 
     if (estRes.ok) {
       const estimates = await estRes.json();
-      if (estimates && estimates.length > 0) {
-        localStorage.setItem(ESTIMATES_KEY, JSON.stringify(estimates));
-      }
+      // Always update - empty array is valid (means no estimates exist)
+      localStorage.setItem(ESTIMATES_KEY, JSON.stringify(estimates || []));
     }
     if (rolesRes.ok) {
       const roles = await rolesRes.json();
-      if (roles && roles.length > 0) {
-        localStorage.setItem(ROLES_KEY, JSON.stringify(roles));
-      }
+      localStorage.setItem(ROLES_KEY, JSON.stringify(roles || []));
     }
     if (cardsRes.ok) {
       const cards = await cardsRes.json();
-      if (cards && cards.length > 0) {
-        localStorage.setItem(RATE_CARDS_KEY, JSON.stringify(cards));
-      }
+      localStorage.setItem(RATE_CARDS_KEY, JSON.stringify(cards || []));
     }
     if (tmplRes.ok) {
       const templates = await tmplRes.json();
-      if (templates && templates.length > 0) {
-        localStorage.setItem(ROLE_TEMPLATES_KEY, JSON.stringify(templates));
-      }
+      localStorage.setItem(ROLE_TEMPLATES_KEY, JSON.stringify(templates || []));
     }
 
     sessionStorage.setItem(HYDRATED_KEY, '1');

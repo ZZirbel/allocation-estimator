@@ -101,6 +101,14 @@ cd desktop && npm run build   # Creates desktop/dist/win-unpacked/
 2. **Server files**: Persisted JSON in configured data directory
 3. **Hydration**: On app load, server files → localStorage
 
+### Data Sync (Team Collaboration)
+- **Ctrl+R refresh**: Re-hydrates all data from server files (picks up team changes)
+- **Focus-based sync**: When window gains focus, automatically re-fetches from server
+  - 30-second debounce prevents excessive fetching
+  - Dashboard listens for `storage` events to refresh estimate list
+- **Write path**: Changes save to localStorage immediately, then async POST to server
+- **Conflict handling**: Last write wins (no merge logic currently)
+
 ### Data Directory Structure
 ```
 <dataDir>/
@@ -247,6 +255,7 @@ interface Role {
 |-------|----------|
 | Setup wizard appears unexpectedly | Check `config.json` has `"configured": true` |
 | Data not loading after directory change | Ensure `clearLocalData()` is called before reload |
+| Team changes not appearing | Press Ctrl+R or switch away and back to window |
 | Role library empty | Initialize data directory or check file exists |
 | Build TypeScript errors | Use `as unknown as Type` for migration casts |
 | Electron won't start | Check node server.cjs works standalone first |

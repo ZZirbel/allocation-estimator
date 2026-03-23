@@ -461,7 +461,7 @@ export default function PhaseGrid({ phase, onChange, showMargin }: Props) {
             <thead>
               <tr>
                 <th className="sticky-col col-role">Role</th>
-                <th className="col-loc">Loc</th>
+                <th className="col-loc">Location</th>
                 <th className="col-rate">Sell Rate</th>
                 {showMargin && <th className="col-rate">Cost Rate</th>}
                 {monthKeys.map((mk) => (

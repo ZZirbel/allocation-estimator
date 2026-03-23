@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Trash2, Copy, FileSpreadsheet, GitBranch, Settings, Download } from 'lucide-react';
 import type { Estimate, EstimateStatus } from '../types';
@@ -64,6 +64,16 @@ export default function Dashboard() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updating, setUpdating] = useState(false);
+
+  // Refresh estimates when storage changes (from focus-based sync)
+  const refreshEstimates = useCallback(() => {
+    setEstimates(loadEstimates());
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('storage', refreshEstimates);
+    return () => window.removeEventListener('storage', refreshEstimates);
+  }, [refreshEstimates]);
 
   // Check for updates on mount (only in Electron)
   useEffect(() => {
