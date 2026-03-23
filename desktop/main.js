@@ -308,8 +308,20 @@ function createAppMenu() {
     {
       label: 'View',
       submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
+        {
+          label: 'Reload',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => {
+            if (mainWindow) mainWindow.reload();
+          },
+        },
+        {
+          label: 'Force Reload',
+          accelerator: 'CmdOrCtrl+Shift+R',
+          click: () => {
+            if (mainWindow) mainWindow.webContents.reloadIgnoringCache();
+          },
+        },
         { role: 'toggleDevTools' },
         { type: 'separator' },
         { role: 'resetZoom' },
@@ -455,13 +467,7 @@ app.on('ready', async () => {
 
   createMainWindow();
 
-  // Explicit keyboard shortcuts (supplement menu accelerators)
-  globalShortcut.register('CmdOrCtrl+R', () => {
-    if (mainWindow && mainWindow.isFocused()) mainWindow.reload();
-  });
-  globalShortcut.register('CmdOrCtrl+Shift+R', () => {
-    if (mainWindow && mainWindow.isFocused()) mainWindow.webContents.reloadIgnoringCache();
-  });
+  // F5 shortcuts (Ctrl+R and Ctrl+Shift+R are handled by menu roles)
   globalShortcut.register('F5', () => {
     if (mainWindow && mainWindow.isFocused()) mainWindow.reload();
   });
