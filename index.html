@@ -5,8 +5,50 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Allocation Estimator</title>
+    <style>
+      /* Loading overlay - shows immediately on page load */
+      #loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: #0f172a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.2s ease-out;
+      }
+      #loading-overlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #loading-overlay svg {
+        width: 48px;
+        height: 48px;
+        color: #3b82f6;
+        animation: spin 1s linear infinite;
+      }
+      #loading-overlay span {
+        margin-top: 16px;
+        color: #94a3b8;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+      }
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
+    <div id="loading-overlay">
+      <!-- Refresh/sync icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+        <path d="M21 3v5h-5"/>
+      </svg>
+      <span>Syncing data...</span>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
