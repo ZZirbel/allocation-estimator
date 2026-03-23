@@ -4,8 +4,8 @@ import type { Estimate } from '../types';
 import {
   getMonthKeys,
   formatMonthLabel,
-  getPhaseRoleTotalCost,
-  getPhaseTotalCost,
+  getPhaseRoleTotalSell,
+  getPhaseTotalSell,
   getPhaseExpensesTotal,
   getEstimateTotalCost,
   getEstimateTotalSell,
@@ -37,9 +37,9 @@ export function exportEstimateToPdf(estimate: Estimate) {
   doc.setTextColor(60);
   const summaryY = 36;
   doc.text(`Status: ${estimate.status.replace('_', ' ').toUpperCase()}`, 14, summaryY);
-  doc.text(`Total Cost: ${formatCurrency(totalCost)}`, 80, summaryY);
-  if (totalSell > 0) {
-    doc.text(`Total Sell: ${formatCurrency(totalSell)}`, 160, summaryY);
+  doc.text(`Total: ${formatCurrency(totalSell)}`, 80, summaryY);
+  if (estimate.showMargin && totalCost > 0) {
+    doc.text(`Cost: ${formatCurrency(totalCost)}`, 160, summaryY);
     doc.text(`Margin: ${formatPercent(margin)}`, 230, summaryY);
   }
   doc.text(`Phases: ${estimate.phases.length}`, pageWidth - 40, summaryY);
@@ -49,14 +49,14 @@ export function exportEstimateToPdf(estimate: Estimate) {
   // Phase tables
   for (const phase of estimate.phases) {
     const monthKeys = getMonthKeys(phase.startMonth, phase.monthCount);
-    const phaseCost = getPhaseTotalCost(phase);
+    const phaseSell = getPhaseTotalSell(phase);
     const phaseExpenses = getPhaseExpensesTotal(phase);
 
     // Phase header
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0);
-    doc.text(`${phase.name}  —  ${formatCurrency(phaseCost + phaseExpenses)}`, 14, yPos);
+    doc.text(`${phase.name}  —  ${formatCurrency(phaseSell + phaseExpenses)}`, 14, yPos);
     yPos += 6;
 
     // Allocation table
@@ -65,12 +65,12 @@ export function exportEstimateToPdf(estimate: Estimate) {
       const allocs = phase.allocations[role.id] || {};
       const cells = [
         role.title,
-        `$${role.hourlyRate}`,
+        `$${role.sellRate || role.hourlyRate}`,
         ...monthKeys.map((mk) => {
           const d = allocs[mk] || 0;
           return d ? `${Math.round(d * 100)}%` : '-';
         }),
-        formatCurrency(getPhaseRoleTotalCost(role.id, phase)),
+        formatCurrency(getPhaseRoleTotalSell(role.id, phase)),
       ];
       return cells;
     });
@@ -89,7 +89,8 @@ export function exportEstimateToPdf(estimate: Estimate) {
       margin: { left: 14, right: 14 },
     });
 
-    yPos = (doc as unknown as Record<string, number>).lastAutoTable?.finalY + 8 || yPos + 40;
+    yPos = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? yPos + 40;
+    yPos += 8;
 
     // Expenses
     if (phase.expenses.length > 0) {
@@ -105,7 +106,8 @@ export function exportEstimateToPdf(estimate: Estimate) {
         headStyles: { fillColor: [100, 116, 139] },
         margin: { left: 14, right: pageWidth - 120 },
       });
-      yPos = (doc as unknown as Record<string, number>).lastAutoTable?.finalY + 8 || yPos + 20;
+      yPos = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? yPos + 20;
+      yPos += 8;
     }
 
     // Page break if needed

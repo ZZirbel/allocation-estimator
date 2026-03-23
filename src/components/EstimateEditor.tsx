@@ -69,11 +69,12 @@ export default function EstimateEditor() {
         if (migrated.phases.length === 0) {
           const defaultPhase = createPhase('Phase 1');
           // Migrate old roles/allocations if they exist
-          if ((est as Record<string, unknown>).roles) {
-            defaultPhase.roles = (est as Record<string, unknown>).roles as EstimatePhase['roles'];
-            defaultPhase.allocations = ((est as Record<string, unknown>).allocations || {}) as EstimatePhase['allocations'];
-            if ((est as Record<string, unknown>).startMonth) defaultPhase.startMonth = (est as Record<string, unknown>).startMonth as string;
-            if ((est as Record<string, unknown>).monthCount) defaultPhase.monthCount = (est as Record<string, unknown>).monthCount as number;
+          const estAny = est as unknown as Record<string, unknown>;
+          if (estAny.roles) {
+            defaultPhase.roles = estAny.roles as EstimatePhase['roles'];
+            defaultPhase.allocations = (estAny.allocations || {}) as EstimatePhase['allocations'];
+            if (estAny.startMonth) defaultPhase.startMonth = estAny.startMonth as string;
+            if (estAny.monthCount) defaultPhase.monthCount = estAny.monthCount as number;
           }
           migrated.phases = [defaultPhase];
         }
@@ -158,6 +159,7 @@ export default function EstimateEditor() {
       title: r.title,
       hourlyRate: r.hourlyRate,
       sellRate: r.sellRate,
+      location: 'onshore' as const,
     }));
     handlePhaseChange({ ...activePhase, roles: [...activePhase.roles, ...newRoles] });
     setShowTemplates(false);
@@ -203,14 +205,14 @@ export default function EstimateEditor() {
               </div>
             )}
           </div>
-          <span className="editor-total">{formatCurrency(totalCost)}</span>
+          <span className="editor-total">{formatCurrency(totalSell)}</span>
           {estimate.showMargin && (
             <span className="editor-margin" title="Margin">
-              Sell: {formatCurrency(totalSell)} ({formatPercent(margin)} margin)
+              Cost: {formatCurrency(totalCost)} ({formatPercent(margin)} margin)
             </span>
           )}
           <div className="editor-actions">
-            <button className="btn btn-ghost btn-sm btn-icon" onClick={() => handleChange({ ...estimate, showMargin: !estimate.showMargin })} title={estimate.showMargin ? 'Hide margin' : 'Show margin'}>
+            <button className="btn btn-ghost btn-sm btn-icon" onClick={() => handleChange({ ...estimate, showMargin: !estimate.showMargin })} title={estimate.showMargin ? 'Hide cost & margin' : 'Show cost & margin'}>
               <Layers size={16} />
             </button>
             <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setShowTemplates(true)} title="Role Templates">

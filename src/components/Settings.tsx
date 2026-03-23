@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, FolderOpen, Save, RotateCcw, CheckCircle, AlertCircle, Info, Rocket, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 import type { AppSettings } from '../lib/store';
-import { loadSettings, saveSettings } from '../lib/store';
+import { loadSettings, saveSettings, clearLocalData } from '../lib/store';
 
 interface Props {
   /** When true, renders as a first-run setup wizard instead of a settings page */
@@ -84,7 +84,7 @@ function SharePointGuide() {
   );
 }
 
-export default function Settings({ setupMode, onSetupComplete }: Props) {
+export default function Settings({ setupMode, onSetupComplete: _onSetupComplete }: Props) {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [dataDir, setDataDir] = useState('');
@@ -111,24 +111,17 @@ export default function Settings({ setupMode, onSetupComplete }: Props) {
     try {
       const result = await saveSettings(dataDir, initializeData || undefined);
       if (result.ok) {
+        // Clear all local data so we load fresh from the new directory
+        clearLocalData();
+
         if (result.warnings && result.warnings.length > 0) {
           setWarnings(result.warnings);
-        }
-        if (setupMode && onSetupComplete) {
-          if (result.warnings && result.warnings.length > 0) {
-            // Show warnings before completing setup
-            setMessage({ type: 'success', text: 'Data directory configured.' });
-            setSettings((prev) => prev ? { ...prev, dataDir, dataDirExists: true, needsSetup: false } : prev);
-            // Still let them continue after seeing warnings
-            setTimeout(() => onSetupComplete(), 3000);
-          } else {
-            onSetupComplete();
-          }
+          setMessage({ type: 'success', text: 'Data directory configured.' });
+          // Show warnings briefly, then reload to pick up new data
+          setTimeout(() => window.location.reload(), 2500);
         } else {
-          setMessage({ type: 'success', text: initializeData
-            ? 'Data directory updated and initialized with starter files.'
-            : 'Data directory updated. New data will be stored at this location.' });
-          setSettings((prev) => prev ? { ...prev, dataDir, dataDirExists: true, needsSetup: false } : prev);
+          // Reload the app to hydrate from the new data directory
+          window.location.reload();
         }
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to save settings.' });

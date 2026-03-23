@@ -113,7 +113,7 @@ export default function PhaseGrid({ phase, onChange, showMargin }: Props) {
       id: uid(),
       title: newRoleTitle || 'New Role',
       hourlyRate: newRoleLocation === 'offshore' && libEntry?.offshoreRate ? libEntry.offshoreRate : newRoleRate,
-      sellRate: showMargin ? (newRoleLocation === 'offshore' && libEntry?.offshoreSellRate ? libEntry.offshoreSellRate : newRoleSellRate) : undefined,
+      sellRate: newRoleLocation === 'offshore' && libEntry?.offshoreSellRate ? libEntry.offshoreSellRate : newRoleSellRate,
       location: newRoleLocation,
     };
     update({ roles: [...phase.roles, role] });
@@ -355,15 +355,13 @@ export default function PhaseGrid({ phase, onChange, showMargin }: Props) {
                 <input value={newRoleTitle} onChange={(e) => setNewRoleTitle(e.target.value)} placeholder="Role title" />
               </div>
               <div className="form-group">
+                <label>Sell Rate ($/hr)</label>
+                <input type="number" value={newRoleSellRate} onChange={(e) => setNewRoleSellRate(Number(e.target.value))} />
+              </div>
+              <div className="form-group">
                 <label>Cost Rate ($/hr)</label>
                 <input type="number" value={newRoleRate} onChange={(e) => setNewRoleRate(Number(e.target.value))} />
               </div>
-              {showMargin && (
-                <div className="form-group">
-                  <label>Sell Rate ($/hr)</label>
-                  <input type="number" value={newRoleSellRate} onChange={(e) => setNewRoleSellRate(Number(e.target.value))} />
-                </div>
-              )}
             </div>
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setShowAddRole(false)}>Cancel</button>
@@ -464,8 +462,8 @@ export default function PhaseGrid({ phase, onChange, showMargin }: Props) {
               <tr>
                 <th className="sticky-col col-role">Role</th>
                 <th className="col-loc">Loc</th>
-                <th className="col-rate">Cost Rate</th>
-                {showMargin && <th className="col-rate">Sell Rate</th>}
+                <th className="col-rate">Sell Rate</th>
+                {showMargin && <th className="col-rate">Cost Rate</th>}
                 {monthKeys.map((mk) => (
                   <th key={mk} className="col-month" onContextMenu={(e) => handleHeaderContextMenu(e, mk)}>{formatMonthLabel(mk)}</th>
                 ))}
@@ -491,11 +489,11 @@ export default function PhaseGrid({ phase, onChange, showMargin }: Props) {
                       </button>
                     </td>
                     <td className="col-rate">
-                      <input className="cell-input cell-number" type="number" value={role.hourlyRate} onChange={(e) => setRoleField(role.id, 'hourlyRate', Number(e.target.value))} />
+                      <input className="cell-input cell-number" type="number" value={role.sellRate || ''} placeholder="-" onChange={(e) => setRoleField(role.id, 'sellRate', Number(e.target.value))} />
                     </td>
                     {showMargin && (
                       <td className="col-rate">
-                        <input className="cell-input cell-number" type="number" value={role.sellRate || ''} placeholder="-" onChange={(e) => setRoleField(role.id, 'sellRate', Number(e.target.value))} />
+                        <input className="cell-input cell-number" type="number" value={role.hourlyRate} onChange={(e) => setRoleField(role.id, 'hourlyRate', Number(e.target.value))} />
                       </td>
                     )}
                     {monthKeys.map((mk) => {
@@ -519,34 +517,40 @@ export default function PhaseGrid({ phase, onChange, showMargin }: Props) {
                           <div style={{ position: 'relative' }}>
                             {hasNote && <div className="cell-note-indicator" title={phase.notes[noteKey]} />}
                             {(viewMode === 'pct' || viewMode === 'both') && (
-                              <input
-                                className="cell-input cell-number cell-pct"
-                                type="number"
-                                step="5"
-                                min="0"
-                                max="100"
-                                value={pctDisplay}
-                                placeholder="-"
-                                onChange={(e) => handleCellInput(role.id, mk, e.target.value)}
-                              />
+                              <span className="pct-input-wrapper">
+                                <input
+                                  className="cell-input cell-number cell-pct"
+                                  type="number"
+                                  step="5"
+                                  min="0"
+                                  max="100"
+                                  value={pctDisplay}
+                                  placeholder="-"
+                                  onChange={(e) => handleCellInput(role.id, mk, e.target.value)}
+                                />
+                                <span className="pct-suffix">%</span>
+                              </span>
                             )}
                             {viewMode === 'cost' && (
-                              <input
-                                className="cell-input cell-number cell-pct"
-                                type="number"
-                                step="5"
-                                min="0"
-                                max="100"
-                                value={pctDisplay}
-                                placeholder="-"
-                                onChange={(e) => handleCellInput(role.id, mk, e.target.value)}
-                              />
+                              <span className="pct-input-wrapper">
+                                <input
+                                  className="cell-input cell-number cell-pct"
+                                  type="number"
+                                  step="5"
+                                  min="0"
+                                  max="100"
+                                  value={pctDisplay}
+                                  placeholder="-"
+                                  onChange={(e) => handleCellInput(role.id, mk, e.target.value)}
+                                />
+                                <span className="pct-suffix">%</span>
+                              </span>
                             )}
-                            {(viewMode === 'cost' || viewMode === 'both') && (
-                              <span className="cost-label">{formatCurrency(cost)}</span>
-                            )}
-                            {showMargin && (viewMode === 'cost' || viewMode === 'both') && role.sellRate && (
+                            {(viewMode === 'cost' || viewMode === 'both') && role.sellRate && (
                               <span className="sell-label">{formatCurrency(getRoleMonthlySell(decimal, role.sellRate))}</span>
+                            )}
+                            {showMargin && (viewMode === 'cost' || viewMode === 'both') && (
+                              <span className="cost-label">{formatCurrency(cost)}</span>
                             )}
                             <div className="drag-handle" onMouseDown={() => handleDragStart(role.id, mk)} />
                           </div>
@@ -556,8 +560,8 @@ export default function PhaseGrid({ phase, onChange, showMargin }: Props) {
                     <td className="col-total">
                       <div className="total-cell">
                         <span className="fte-total">{formatPercent(getPhaseRoleTotalAllocation(role.id, phase) / phase.monthCount)} avg</span>
-                        <span className="cost-total">{formatCurrency(getPhaseRoleTotalCost(role.id, phase))}</span>
-                        {showMargin && <span className="sell-total">{formatCurrency(getPhaseRoleTotalSell(role.id, phase))}</span>}
+                        <span className="sell-total">{formatCurrency(getPhaseRoleTotalSell(role.id, phase))}</span>
+                        {showMargin && <span className="cost-total">{formatCurrency(getPhaseRoleTotalCost(role.id, phase))}</span>}
                       </div>
                     </td>
                     <td className="col-actions">
@@ -577,17 +581,17 @@ export default function PhaseGrid({ phase, onChange, showMargin }: Props) {
                   <td key={mk} className="col-month">
                     <strong>{formatPercent(getPhaseMonthTotalAllocation(phase, mk))}</strong>
                     {(viewMode === 'cost' || viewMode === 'both') && (
-                      <div className="cost-label"><strong>{formatCurrency(getPhaseMonthTotalCost(phase, mk))}</strong></div>
+                      <div className="sell-label"><strong>{formatCurrency(getPhaseMonthTotalSell(phase, mk))}</strong></div>
                     )}
                     {showMargin && (viewMode === 'cost' || viewMode === 'both') && (
-                      <div className="sell-label"><strong>{formatCurrency(getPhaseMonthTotalSell(phase, mk))}</strong></div>
+                      <div className="cost-label"><strong>{formatCurrency(getPhaseMonthTotalCost(phase, mk))}</strong></div>
                     )}
                   </td>
                 ))}
                 <td className="col-total">
                   <div className="total-cell grand-total">
-                    <strong>{formatCurrency(phaseCost)}</strong>
-                    {showMargin && <strong className="sell-total">{formatCurrency(phaseSell)}</strong>}
+                    <strong>{formatCurrency(phaseSell)}</strong>
+                    {showMargin && <strong className="cost-total">{formatCurrency(phaseCost)}</strong>}
                   </div>
                 </td>
                 <td className="col-actions"></td>

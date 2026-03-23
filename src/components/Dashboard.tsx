@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Trash2, Copy, FileSpreadsheet, GitBranch, Settings } from 'lucide-react';
 import type { Estimate, EstimateStatus } from '../types';
 import { loadEstimates, deleteEstimate, saveEstimate } from '../lib/store';
-import { getEstimateTotalCost, formatCurrency } from '../lib/calculations';
+import { getEstimateTotalSell, formatCurrency } from '../lib/calculations';
 import { uid } from '../lib/ids';
 
 const STATUS_FILTERS: { value: EstimateStatus | 'all'; label: string }[] = [
@@ -177,7 +177,7 @@ export default function Dashboard() {
       ) : (
         <div className="estimates-grid">
           {filtered.map((est) => {
-            const total = getEstimateTotalCost(est);
+            const total = getEstimateTotalSell(est);
             const scenarios = getScenarios(est.id);
             return (
               <div key={est.id} className="estimate-card" onClick={() => navigate(`/estimate/${est.id}`)}>

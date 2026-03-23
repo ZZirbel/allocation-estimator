@@ -669,8 +669,20 @@ input[type="number"] { -moz-appearance: textfield; }
 .cell-text { text-align: left; }
 .cell-pct {
   text-align: right;
-  width: 60px;
+  width: 50px;
   color: var(--text-muted);
+}
+
+.pct-input-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.pct-suffix {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 1px;
 }
 
 .cell-cost { font-size: 11px; color: var(--text-muted); text-align: center; }

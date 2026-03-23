@@ -3,9 +3,9 @@ import type { Estimate } from '../types';
 import {
   getMonthKeys,
   formatMonthLabel,
+  getRoleMonthlySell,
   getRoleMonthlyCost,
   getPhaseExpensesTotal,
-  formatCurrency,
 } from './calculations';
 
 export function exportEstimateToXlsx(estimate: Estimate) {
@@ -13,13 +13,13 @@ export function exportEstimateToXlsx(estimate: Estimate) {
 
   for (const phase of estimate.phases) {
     const monthKeys = getMonthKeys(phase.startMonth, phase.monthCount);
-    const headers = ['Name', 'Rate', ...monthKeys.map(formatMonthLabel), 'TOTAL'];
+    const headers = ['Name', 'Sell Rate', ...monthKeys.map(formatMonthLabel), 'TOTAL'];
     const rows: (string | number)[][] = [headers];
 
     // Allocation rows (percentages)
     for (const role of phase.roles) {
       const allocs = phase.allocations[role.id] || {};
-      const row: (string | number)[] = [role.title, role.hourlyRate];
+      const row: (string | number)[] = [role.title, role.sellRate || role.hourlyRate];
       let total = 0;
       for (const mk of monthKeys) {
         const v = allocs[mk] || 0;
@@ -31,7 +31,38 @@ export function exportEstimateToXlsx(estimate: Estimate) {
     }
 
     rows.push([]);
-    rows.push(headers);
+    rows.push(['SELL AMOUNTS', '', ...monthKeys.map(formatMonthLabel), 'TOTAL']);
+
+    // Sell rows
+    for (const role of phase.roles) {
+      const allocs = phase.allocations[role.id] || {};
+      const row: (string | number)[] = [role.title, role.sellRate || role.hourlyRate];
+      let total = 0;
+      for (const mk of monthKeys) {
+        const sell = getRoleMonthlySell(allocs[mk] || 0, role.sellRate || role.hourlyRate);
+        row.push(sell);
+        total += sell;
+      }
+      row.push(total);
+      rows.push(row);
+    }
+
+    // Sell totals
+    const sellTotals: (string | number)[] = ['TOTAL', ''];
+    let sellGrand = 0;
+    for (const mk of monthKeys) {
+      const t = phase.roles.reduce((s, r) => {
+        const alloc = (phase.allocations[r.id] || {})[mk] || 0;
+        return s + getRoleMonthlySell(alloc, r.sellRate || r.hourlyRate);
+      }, 0);
+      sellTotals.push(t);
+      sellGrand += t;
+    }
+    sellTotals.push(sellGrand);
+    rows.push(sellTotals);
+
+    rows.push([]);
+    rows.push(['COST AMOUNTS', 'Cost Rate', ...monthKeys.map(formatMonthLabel), 'TOTAL']);
 
     // Cost rows
     for (const role of phase.roles) {

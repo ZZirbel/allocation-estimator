@@ -6,6 +6,16 @@ const RATE_CARDS_KEY = 'allocation-estimator-rate-cards';
 const ROLE_TEMPLATES_KEY = 'allocation-estimator-role-templates';
 const HYDRATED_KEY = 'allocation-estimator-hydrated';
 
+// ── Clear local data (for directory change) ────────────────────
+
+export function clearLocalData(): void {
+  localStorage.removeItem(ESTIMATES_KEY);
+  localStorage.removeItem(ROLES_KEY);
+  localStorage.removeItem(RATE_CARDS_KEY);
+  localStorage.removeItem(ROLE_TEMPLATES_KEY);
+  sessionStorage.removeItem(HYDRATED_KEY);
+}
+
 // ── Server sync ─────────────────────────────────────────────────
 
 function postJson(url: string, data: unknown) {
@@ -79,11 +89,11 @@ export async function hydrateFromServer(): Promise<void> {
 // ── Migration ───────────────────────────────────────────────────
 
 function migrateEstimate(est: Record<string, unknown>): Estimate {
-  const e = est as Estimate;
+  const e = est as unknown as Estimate;
   if (!e.phases) e.phases = [];
   if (!e.versions) e.versions = [];
   if (e.showMargin === undefined) e.showMargin = false;
-  if (e.status === undefined) (e as Estimate).status = 'draft';
+  if (e.status === undefined) e.status = 'draft';
 
   if (e.phases.length === 0 && (est.roles || est.startMonth)) {
     e.phases = [{
@@ -99,14 +109,15 @@ function migrateEstimate(est: Record<string, unknown>): Estimate {
   }
 
   for (const phase of e.phases) {
-    const p = phase as Record<string, unknown>;
+    const p = phase as unknown as Record<string, unknown>;
     if (!phase.roles) phase.roles = [];
     if (!phase.allocations) phase.allocations = {};
     if (!phase.notes) phase.notes = {};
     if (!phase.expenses) phase.expenses = [];
     for (const role of phase.roles) {
-      if (!(role as Record<string, unknown>).location) {
-        (role as Record<string, unknown>).location = 'onshore';
+      const r = role as unknown as Record<string, unknown>;
+      if (!r.location) {
+        r.location = 'onshore';
       }
     }
     if (p.entries && !phase.roles.length) {
